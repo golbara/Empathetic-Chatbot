@@ -7,9 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
-		
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>		
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 		<link rel="stylesheet" href="{% static 'bot/css/style.css' %}">
+    
   </head>
   <style>
     @keyframes typing {
@@ -143,16 +144,45 @@
                 <div class="row">
                     <div class="col-10">
                         <input type="text" id="chat-input" class="form-control" placeholder="Type your message here..." aria-label="Chat input">
+                      <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
                     </div>
                     <div class="col-2">
                         <button type="button" id="send-btn" class="btn btn-primary btn-block">Send</button>
+                       <!--  <script src="{% static 'script.js' %}"></script> -->
                     </div>
                 </div>
             </div>
         </div>
       </div>
 		</div>
-
+   <!-- <script>
+    document.getElementById('send-btn').addEventListener('click', function () {
+        let userMessage = document.getElementById('chat-input').value;
+        let csrfToken = document.getElementById('csrf_token').value;
+        if (userMessage.trim() !== "") {
+            $.ajax({
+                url: "get_input/,  // URL should match the path you define in urls.py
+                type: "POST",
+                data: {
+                    message: userMessage,
+                    csrfmiddlewaretoken: csrfToken  // For CSRF protection
+                },
+                success: function(response) {
+                    // Append user's message to chat-box
+                    document.getElementById("chat-box").innerHTML += "<p><b>You:</b> " + userMessage + "</p>";
+                    
+                    // Append bot's response to chat-box
+                    document.getElementById("chat-box").innerHTML += "<p><b>Bot:</b> " + response.response + "</p>";
+                },
+                error: function() {
+                    alert("An error occurred");
+                }
+            });
+            document.getElementById('chat-input').value = ""; // Clears the input field
+            stopTypingAnimation();  // Stop the typing animation
+        }
+    });
+    </script> -->
     <script>
         // Function to stop the typing animation
         function stopTypingAnimation() {
@@ -173,15 +203,34 @@
 
         // Trigger the animation stop when the "Send" button is clicked
         document.getElementById('send-btn').addEventListener('click', function () {
-            let message = document.getElementById('chat-input').value;
-            if (message.trim() !== "") {
-                console.log("Message sent: " + message);
-                document.getElementById('chat-input').value = ""; // Clears the input field
-                stopTypingAnimation();  // Stop the typing animation
+        let userMessage = document.getElementById('chat-input').value;
+        let csrfToken = document.getElementById('csrf_token').value;
+        if (userMessage.trim() !== "") {
+           $.ajax({
+                url: "get_input/",  // URL should match the path you define in urls.py
+                type: "POST",
+                data: {
+                    message: userMessage,
+                    csrfmiddlewaretoken: csrfToken  // For CSRF protection
+                },
+                success: function(response) {
+                    // Append user's message to chat-box
+                    document.getElementById("chat-box").innerHTML += "<p><b>You:</b> " + userMessage + "</p>";
+                    // console.log("Message sent: " + userMessage);
+                    // Append bot's response to chat-box
+                    document.getElementById("chat-box").innerHTML += "<p><b>Bot:</b> " + response.response + "</p>";
+                },
+                error: function() {
+                    alert("An error occurred");
             }
         });
+            // console.log("Message sent: " + userMessage);
+            document.getElementById('chat-input').value = ""; // Clears the input field
+            stopTypingAnimation();  // Stop the typing animation
+        }
+    });
     </script>
-    <script src="{% static 'bot/js/jquery.min.js' %}"></script>
+    <!-- <script src="{% static 'bot/js/jquery.min.js' %}"></script> -->
     <script src="{% static 'bot/js/popper.js' %}"></script>
     <script src="{% static 'bot/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'bot/js/main.js' %}"></script>
