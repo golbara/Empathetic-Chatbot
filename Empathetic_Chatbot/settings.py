@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bot',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -117,18 +118,27 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Define the URL for serving static files
-STATIC_URL = '/static/'
+# # Define the URL for serving static files
+# STATIC_URL = '/static/'
 
-# Optional: Define additional locations for static files
-STATICFILES_DIRS = [
-    BASE_DIR / "static",  # If you have a project-level static folder
-]
+# # Optional: Define additional locations for static files
+# STATICFILES_DIRS = [
+#     "bot/static",  # If you have a project-level static folder
+# ]
+
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Basic': {
+            'type': 'basic'
+        }
+    }
+}
 
