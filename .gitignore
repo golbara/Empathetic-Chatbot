@@ -8,3 +8,9 @@ wheels/
 
 # venv
 .venv
+
+# Ignore everything in the directory
+bot/data/*
+
+# Exclude the specific file from being ignored
+!bot/data/load.py
