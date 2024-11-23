@@ -19,7 +19,7 @@ def streamlit_view(request):
     # Path to the Streamlit script in the current directory
     streamlit_file = os.path.join(current_directory, "streamlit.py")
     # Start the Streamlit app as a subprocess
-    subprocess.Popen(["streamlit", "run", streamlit_file])
+    subprocess.Popen(["streamlit", "run", streamlit_file, "--server.port", "8501"])
 
     # Redirect to the default Streamlit URL
     return redirect("http://localhost:8501")
