@@ -152,3 +152,5 @@ uritemplate==4.1.1
     # via drf-yasg
 urllib3==2.2.3
     # via requests
+watchdog==6.0.0
+    # via empathetic-chatbot
