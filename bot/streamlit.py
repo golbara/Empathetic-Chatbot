@@ -3,14 +3,14 @@ import streamlit as st
 import pandas as pd
 from scipy.spatial.distance import cosine
 
-
+st.title("Welcome! 😄")
 # Use the cached dataset
 if "prompt" not in st.session_state:
     st.session_state.prompt = ""
-if st.session_state.prompt == "":
-    st.title("Welcome! 😄")
-else:
-    st.title()
+# if st.session_state.prompt == "":
+#     st.title("Welcome! 😄")
+# else:
+#     st.title()
 # Load dataset
 from datasets import load_from_disk
 import os
