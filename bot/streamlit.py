@@ -6,8 +6,14 @@ import os
 import json  # For serializing lists to a string
 from datasets import load_from_disk
 
-st.title("Welcome! 😄")
 
+# Use the cached dataset
+if "prompt" not in st.session_state:
+    st.session_state.prompt = ""
+if st.session_state.prompt == "":
+    st.title("Welcome! 😄")
+else:
+    st.title()
 # Load dataset
 @st.cache_data
 def load_dataset():
@@ -18,7 +24,7 @@ def load_dataset():
     # Load the dataset from the saved location
     return load_from_disk(data_path)
 
-# Use the cached dataset
+
 dataset = load_dataset()
 
 
@@ -56,8 +62,7 @@ if "embedding_model" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "prompt" not in st.session_state:
-    st.session_state.prompt = ""
+
 
 if "selected_messages" not in st.session_state:
     st.session_state.selected_messages = []
@@ -73,14 +78,14 @@ def click_button(key_name, entry):
     st.session_state.liked.add(key_name)
     st.session_state.selected_messages.append(entry["Persian Messages"])
 
-def click_disButton(key_name, entry):
+def click_disButton(key_name, entry,rank):
     st.session_state.key_name = True
-    if entry["Persian Messages"] in st.session_state.selected_messages:
+    if f"like_{rank}" in st.session_state.liked:
         # Remove from liked
-
-        # add to disliked
-        st.session_state.dislike.add(key_name)
+        st.session_state.liked.remove(f"like_{rank}")
         st.session_state.selected_messages.remove(entry["Persian Messages"])
+        # add to disliked
+        st.session_state.disliked.add(key_name)
 
 # Display chat history
 for message in st.session_state.messages:
@@ -158,7 +163,7 @@ if prompt := st.chat_input("What is up?"):
 
             with col2:
                 key_name = f"dislike_{rank}"
-                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry])
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry,rank])
 
     st.button("انتخاب کردم",key="done!")    
 elif st.session_state.prompt!="" and st.session_state["done!"]: #################################################################### selecting is done ################################################################
@@ -248,5 +253,5 @@ elif st.session_state.prompt != "":#############################################
             with col2:
                 key_name = f"dislike_{rank}"
                 # Allow users to unselect messages by clicking Dislike
-                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry],disabled= key_name in st.session_state.disliked)         
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry,rank],disabled= key_name in st.session_state.disliked)         
     st.button("انتخاب کردم",key="done!")    
