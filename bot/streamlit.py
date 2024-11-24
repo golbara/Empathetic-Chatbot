@@ -1,34 +1,194 @@
 from openai import OpenAI
 import streamlit as st
+import pandas as pd
+from scipy.spatial.distance import cosine
 
-st.title("ChatGPT-like clone")
+st.title("Welcome! 😄")
 
-#client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"],base_url="https://api.metisai.ir/api/v1/wrapper/{provider}")
+# Load dataset
+from datasets import load_from_disk
+import os
+@st.cache_data
+def load_dataset():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Path to the Streamlit script in the current directory
+    data_path = os.path.join(current_directory, "data")
+    # Load the dataset from the saved location
+    return load_from_disk(data_path)
+
+# Use the cached dataset
+dataset = load_dataset()
+
 client = OpenAI(
     api_key="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")
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-4o-mini"
 
+if "embedding_model" not in st.session_state:
+    st.session_state["embedding_model"] = "text-embedding-3-small"
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "prompt" not in st.session_state:
+    st.session_state.prompt = ""
+
+if "selected_messages" not in st.session_state:
+    st.session_state.selected_messages = []
+
+if "sorted_indices" not in st.session_state:
+    st.session_state.sorted_indices = []
+if "liked" not in st.session_state:
+    st.session_state.liked = set()
+if "disliked" not in st.session_state:
+    st.session_state.disliked = set()
+def click_button(key_name, entry):
+    st.session_state.key_name = True
+    st.session_state.liked.add(key_name)
+    st.session_state.selected_messages.append(entry["Persian Messages"])
+
+def click_disButton(key_name, entry):
+    st.session_state.key_name = True
+    if entry["Persian Messages"] in st.session_state.selected_messages:
+        # Remove from liked
+
+        # add to disliked
+        st.session_state.dislike.add(key_name)
+        st.session_state.selected_messages.remove(entry["Persian Messages"])
+
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+################################################################################################## User prompt input ################################################################# 
 if prompt := st.chat_input("What is up?"):
+    st.session_state.prompt = prompt
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        stream = client.chat.completions.create(
-            model=st.session_state["openai_model"],
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
-        response = st.write_stream(stream)
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    # Get embedding of the prompt
+    query_embedding = client.embeddings.create(input=prompt, model=st.session_state.embedding_model).data[0].embedding
+
+    # Find similarity distances
+    # Compute cosine distances and store them in a separate list
+    distances = [cosine(query_embedding, embedding) for embedding in dataset["embedding"]]
+
+    # Pair each distance with its corresponding dataset row index
+    distance_with_indices = list(enumerate(distances))
+
+    # Sort the dataset indices based on cosine distances
+    sorted_indices = sorted(distance_with_indices, key=lambda x: x[1])
+    st.session_state.sorted_indices = sorted_indices
+
+    # # Retrieve the sorted dataset rows based on the sorted indices
+    # sorted_dataset = [dataset[i] for i, _ in sorted_indices]
+
+    # Example: Display the top 5 most similar messages
+    # for idx, entry in enumerate(sorted_dataset[:5]):
+    #     # st.write(f"Rank {idx+1}: {entry['content']} (Distance: {distances[sorted_indices[idx][0]]:.4f})")
+    #     print(f"Rank {idx+1}: {entry['Persian Messages']} (Distance: {distances[sorted_indices[idx][0]]:.4f})")
+
+    # CSS for RTL and Persian font
+    st.markdown(
+        """
+        <style>
+        @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
+        .rtl-text {
+            text-align: right;
+            direction: rtl;
+            font-family: 'Vazir', sans-serif;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    # Display the top 5 sorted Persian messages
+    for rank, (index, distance) in enumerate(sorted_indices[:5]):
+        # st.session_state.rank = rank
+        entry = dataset[index]  # Access the dataset row using the index
+        with st.container():
+            # Display the message with RTL alignment
+            st.markdown(
+                f"""
+                <div class="rtl-text">
+                    <strong>رتبه {rank + 1}:</strong> {entry['Persian Messages']} <br>
+                    <em>فاصله:</em> {distance:.4f}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Create columns for Like/Dislike buttons
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                key_name = f"like_{rank}"
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry])
+
+            with col2:
+                key_name = f"dislike_{rank}"
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry])
+
+    st.button("انتخاب کردم",key="done!")    
+elif st.session_state.prompt!="" and st.session_state["done!"]: #################################################################### selecting is done ################################################################
+    # generating
+    ## Combine selected messages with user prompt
+    with st.spinner("در حال تولید پاسخ..."):
+        assistant_input = {
+            "selected_messages": st.session_state.selected_messages,
+            "prompt": st.session_state.prompt
+        }
+
+        # Pass selected messages and prompt to the assistant
+        with st.chat_message("assistant"):
+            stream = client.chat.completions.create(
+                model=st.session_state["openai_model"],
+                messages=[
+                    {"role": "system", "content": f"Use the following selected messages to inform your response: {assistant_input['selected_messages']}"},
+                    {"role": "user", "content": assistant_input["prompt"]}
+                ],
+                stream=True,
+            )
+            response = st.write_stream(stream)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Delete a single key-value pair
+    for message in st.session_state.selected_messages:
+        print("***********************",message)
+    del st.session_state.liked
+    del st.session_state.disliked
+    del st.session_state.selected_messages
+    del st.session_state.sorted_indices
+elif st.session_state.prompt != "":##############################################################################################    selecting    ################################################################
+    # show items
+   # Display the top 5 sorted Persian messages
+    for rank, (index, distance) in enumerate(st.session_state.sorted_indices[:5]):
+        entry = dataset[index]  # Access the dataset row using the index
+        with st.container():
+            # Display the message with RTL alignment
+            st.markdown(
+                f"""
+                <div class="rtl-text">
+                    <strong>رتبه {rank + 1}:</strong> {entry['Persian Messages']} <br>
+                    <em>فاصله:</em> {distance:.4f}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Create columns for Like/Dislike buttons
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                key_name = f"like_{rank}"
+                print('\n',st.session_state[key_name])
+                # Allow users to select messages by clicking Like
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry],disabled= key_name in st.session_state.liked)
+
+            with col2:
+                key_name = f"dislike_{rank}"
+                # Allow users to unselect messages by clicking Dislike
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry],disabled= key_name in st.session_state.disliked)         
+    st.button("انتخاب کردم",key="done!")    
