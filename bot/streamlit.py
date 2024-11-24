@@ -6,14 +6,14 @@ import os
 import json  # For serializing lists to a string
 from datasets import load_from_disk
 
-
+st.title("Welcome! 😄")
 # Use the cached dataset
 if "prompt" not in st.session_state:
     st.session_state.prompt = ""
-if st.session_state.prompt == "":
-    st.title("Welcome! 😄")
-else:
-    st.title()
+# if st.session_state.prompt == "":
+#     st.title("Welcome! 😄")
+# else:
+#     st.title()
 # Load dataset
 @st.cache_data
 def load_dataset():
