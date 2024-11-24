@@ -48,8 +48,10 @@ if "liked" not in st.session_state:
     st.session_state.liked = set()
 if "disliked" not in st.session_state:
     st.session_state.disliked = set()
-def click_button(key_name, entry):
+def click_button(key_name, entry,rank):
     st.session_state.key_name = True
+    if f"dislike_{rank}" in st.session_state.disliked:
+        st.session_state.disliked.remove(f"dislike_{rank}")  # Remove from disliked
     st.session_state.liked.add(key_name)
     st.session_state.selected_messages.append(entry["Persian Messages"])
 
@@ -142,7 +144,7 @@ if prompt := st.chat_input("What is up?"):
             col1, col2 = st.columns([1, 1])
             with col1:
                 key_name = f"like_{rank}"
-                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry])
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry,rank])
 
             with col2:
                 key_name = f"dislike_{rank}"
@@ -225,7 +227,7 @@ elif st.session_state.prompt != "":#############################################
                 key_name = f"like_{rank}"
                 print('\n',st.session_state[key_name])
                 # Allow users to select messages by clicking Like
-                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry],disabled= key_name in st.session_state.liked)
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry,rank],disabled= key_name in st.session_state.liked)
 
             with col2:
                 key_name = f"dislike_{rank}"
