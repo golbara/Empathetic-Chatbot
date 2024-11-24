@@ -107,6 +107,16 @@ if prompt := st.chat_input("What is up?"):
         """,
         unsafe_allow_html=True,
     )
+    with st.container():
+        # Display the message with RTL alignment
+        st.markdown(
+            f"""
+            <div class="rtl-text">
+                <strong> از بین موارد زیر،متن‌های مرتبط را لایک کنید.</strong> <br>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     # Display the top 5 sorted Persian messages
     for rank, (index, distance) in enumerate(sorted_indices[:5]):
         # st.session_state.rank = rank
@@ -164,7 +174,32 @@ elif st.session_state.prompt!="" and st.session_state["done!"]: ################
     del st.session_state.sorted_indices
 elif st.session_state.prompt != "":##############################################################################################    selecting    ################################################################
     # show items
+    st.markdown(
+            """
+            <style>
+            @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
+            .rtl-text {
+                text-align: right;
+                direction: rtl;
+                font-family: 'Vazir', sans-serif;
+                font-size: 1.1em;
+                margin-bottom: 15px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
    # Display the top 5 sorted Persian messages
+    with st.container():
+        # Display the message with RTL alignment
+        st.markdown(
+            f"""
+            <div class="rtl-text">
+                <strong> از بین موارد زیر،متن‌های مرتبط را لایک کنید.</strong> <br>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     for rank, (index, distance) in enumerate(st.session_state.sorted_indices[:5]):
         entry = dataset[index]  # Access the dataset row using the index
         with st.container():
