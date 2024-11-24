@@ -2,12 +2,13 @@ from openai import OpenAI
 import streamlit as st
 import pandas as pd
 from scipy.spatial.distance import cosine
+import os
+import json  # For serializing lists to a string
+from datasets import load_from_disk
 
 st.title("Welcome! 😄")
 
 # Load dataset
-from datasets import load_from_disk
-import os
 @st.cache_data
 def load_dataset():
     current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +20,30 @@ def load_dataset():
 
 # Use the cached dataset
 dataset = load_dataset()
+
+
+def save_to_dataset(query, selected_messages, sorted_indices, filename="saved_data.csv"):
+    # Get the current directory and file path
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_directory, filename) 
+    
+    # Create a dictionary of data to save
+    data = {
+        "prompt": query,
+        "selected_messages": json.dumps(selected_messages),  # Serialize the list to a JSON string
+        "sorted_indices": json.dumps(sorted_indices)  # Serialize the list to a JSON string
+    }
+    
+    # Convert to DataFrame
+    df = pd.DataFrame([data])  # Wrap `data` in a list to create a single-row DataFrame
+    
+    # Check if the file exists and save appropriately
+    if not os.path.exists(file_path):
+        df.to_csv(file_path, index=False)
+    else:
+        df.to_csv(file_path, mode='a', header=False, index=False)
+
+
 
 client = OpenAI(
     api_key="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")
@@ -82,14 +107,6 @@ if prompt := st.chat_input("What is up?"):
     # Sort the dataset indices based on cosine distances
     sorted_indices = sorted(distance_with_indices, key=lambda x: x[1])
     st.session_state.sorted_indices = sorted_indices
-
-    # # Retrieve the sorted dataset rows based on the sorted indices
-    # sorted_dataset = [dataset[i] for i, _ in sorted_indices]
-
-    # Example: Display the top 5 most similar messages
-    # for idx, entry in enumerate(sorted_dataset[:5]):
-    #     # st.write(f"Rank {idx+1}: {entry['content']} (Distance: {distances[sorted_indices[idx][0]]:.4f})")
-    #     print(f"Rank {idx+1}: {entry['Persian Messages']} (Distance: {distances[sorted_indices[idx][0]]:.4f})")
 
     # CSS for RTL and Persian font
     st.markdown(
@@ -166,8 +183,14 @@ elif st.session_state.prompt!="" and st.session_state["done!"]: ################
             response = st.write_stream(stream)
         st.session_state.messages.append({"role": "assistant", "content": response})
         # Delete a single key-value pair
-    for message in st.session_state.selected_messages:
-        print("***********************",message)
+    # for message in st.session_state.selected_messages:
+    #     print("***********************",message)
+            # Save query, selected messages, and sorted messages
+    save_to_dataset(
+        st.session_state.prompt,
+        st.session_state.selected_messages,
+        st.session_state.sorted_indices
+    )
     del st.session_state.liked
     del st.session_state.disliked
     del st.session_state.selected_messages
