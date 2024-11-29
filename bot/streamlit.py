@@ -119,7 +119,7 @@ if prompt := st.chat_input("What is up?"):
         st.markdown(
             f"""
             <div class="rtl-text">
-                <strong> از بین موارد زیر،متن‌های مرتبط را لایک کنید.</strong> <br>
+                <strong> از بین موارد زیر،متن‌(های) مرتبط را لایک کنید.</strong> <br>
             </div>
             """,
             unsafe_allow_html=True,
