@@ -230,7 +230,7 @@ elif st.session_state.prompt != "":#############################################
             """,
             unsafe_allow_html=True,
         )
-    for rank, (index, distance) in enumerate(st.session_state.sorted_indices[:5]):
+    for rank, (index, distance) in enumerate(st.session_state.sorted_indices[:10]):
         entry = dataset[index]  # Access the dataset row using the index
         with st.container():
             # Display the message with RTL alignment
