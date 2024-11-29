@@ -142,7 +142,7 @@ if prompt := st.chat_input("What is up?"):
             unsafe_allow_html=True,
         )
     # Display the top 5 sorted Persian messages
-    for rank, (index, distance) in enumerate(sorted_indices[:5]):
+    for rank, (index, distance) in enumerate(sorted_indices[:10]):
         # st.session_state.rank = rank
         entry = dataset[index]  # Access the dataset row using the index
         with st.container():
