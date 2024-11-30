@@ -8,6 +8,8 @@ from datasets import load_from_disk
 
 st.title("Welcome! 😄")
 
+
+# Use the cached dataset
 # Load dataset
 @st.cache_data
 def load_dataset():
@@ -18,7 +20,7 @@ def load_dataset():
     # Load the dataset from the saved location
     return load_from_disk(data_path)
 
-# Use the cached dataset
+
 dataset = load_dataset()
 
 
@@ -48,40 +50,69 @@ def save_to_dataset(query, selected_messages, sorted_indices, filename="saved_da
 
 client = OpenAI(
     api_key="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")
+
+if "nreturned" not in st.session_state:
+    st.session_state.nreturned = 10
+
+
+if "prompt" not in st.session_state:
+    st.session_state.prompt = ""
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-4o-mini"
 
 if "embedding_model" not in st.session_state:
     st.session_state["embedding_model"] = "text-embedding-3-small"
 
+if "cliked" not in st.session_state:
+    st.session_state.cliked = 0
+
+if "cdisliked" not in st.session_state:
+    st.session_state.cdisliked = 0
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "prompt" not in st.session_state:
-    st.session_state.prompt = ""
+if "nearests" not in st.session_state:
+    st.session_state.nearests = []
 
 if "selected_messages" not in st.session_state:
     st.session_state.selected_messages = []
 
-if "sorted_indices" not in st.session_state:
-    st.session_state.sorted_indices = []
+# if "sorted_indices" not in st.session_state:
+#     st.session_state.sorted_indices = []
 if "liked" not in st.session_state:
     st.session_state.liked = set()
 if "disliked" not in st.session_state:
     st.session_state.disliked = set()
-def click_button(key_name, entry):
+
+if "mrr" not in st.session_state:
+    st.session_state.mrr = 0
+
+def precision():
+    return st.session_state.liked/st.session_state.nreturned
+
+
+def click_button(key_name, entry,rank):
     st.session_state.key_name = True
+    st.session_state.cliked += 1
+    if f"dislike_{rank}" in st.session_state.disliked:
+        st.session_state.disliked.remove(f"dislike_{rank}")  # Remove from disliked
+        st.session_state.cdisliked -= 1
     st.session_state.liked.add(key_name)
     st.session_state.selected_messages.append(entry["Persian Messages"])
+    st.session_state.mrr += 1/(rank+1)
+    print("**************************  ",st.session_state.mrr)
 
-def click_disButton(key_name, entry):
+def click_disButton(key_name, entry,rank):
     st.session_state.key_name = True
-    if entry["Persian Messages"] in st.session_state.selected_messages:
+    st.session_state.cdisliked += 1
+    if f"like_{rank}" in st.session_state.liked:
         # Remove from liked
-
-        # add to disliked
-        st.session_state.dislike.add(key_name)
+        st.session_state.liked.remove(f"like_{rank}")
+        st.session_state.cliked -= 1
         st.session_state.selected_messages.remove(entry["Persian Messages"])
+        # add to disliked
+    st.session_state.disliked.add(key_name)
 
 # Display chat history
 for message in st.session_state.messages:
@@ -107,7 +138,7 @@ if prompt := st.chat_input("What is up?"):
 
     # Sort the dataset indices based on cosine distances
     sorted_indices = sorted(distance_with_indices, key=lambda x: x[1])
-    st.session_state.sorted_indices = sorted_indices
+    # st.session_state.sorted_indices = sorted_indices
 
     # CSS for RTL and Persian font
     st.markdown(
@@ -130,15 +161,17 @@ if prompt := st.chat_input("What is up?"):
         st.markdown(
             f"""
             <div class="rtl-text">
-                <strong> از بین موارد زیر،متن‌های مرتبط را لایک کنید.</strong> <br>
+                <strong> از بین موارد زیر،متن‌(های) مرتبط را لایک کنید.</strong> <br>
             </div>
             """,
             unsafe_allow_html=True,
         )
     # Display the top 5 sorted Persian messages
-    for rank, (index, distance) in enumerate(sorted_indices[:5]):
+    for rank, (index, distance) in enumerate(sorted_indices[:st.session_state.nreturned]):
         # st.session_state.rank = rank
+        print(f"rank: {rank}      index: {index}")
         entry = dataset[index]  # Access the dataset row using the index
+        st.session_state.nearests.append(entry)
         with st.container():
             # Display the message with RTL alignment
             st.markdown(
@@ -155,11 +188,11 @@ if prompt := st.chat_input("What is up?"):
             col1, col2 = st.columns([1, 1])
             with col1:
                 key_name = f"like_{rank}"
-                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry])
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry,rank])
 
             with col2:
                 key_name = f"dislike_{rank}"
-                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry])
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry,rank])
 
     st.button("انتخاب کردم",key="done!")    
 elif st.session_state.prompt!="" and st.session_state["done!"]: #################################################################### selecting is done ################################################################
@@ -190,12 +223,21 @@ elif st.session_state.prompt!="" and st.session_state["done!"]: ################
     save_to_dataset(
         st.session_state.prompt,
         st.session_state.selected_messages,
-        st.session_state.sorted_indices
+        # st.session_state.sorted_indices
+        st.session_state.nearests
     )
+    print("@@@@@@@@@@@@@@@@@@@@@@@  ",st.session_state.mrr,"@@@@@@@@@@@@@@@@@@@@@@@  ")
+    print("@@@@@@@@@@@@@@@@@@@@@@@  ",st.session_state.cliked/st.session_state.nreturned,"@@@@@@@@@@@@@@@@@@@@@@@  ")
+
     del st.session_state.liked
     del st.session_state.disliked
+    del st.session_state.cliked
+    del st.session_state.cdisliked
     del st.session_state.selected_messages
-    del st.session_state.sorted_indices
+    # del st.session_state.sorted_indices
+    del st.session_state.mrr
+    del st.session_state.nearests
+
 elif st.session_state.prompt != "":##############################################################################################    selecting    ################################################################
     # show items
     st.markdown(
@@ -224,15 +266,14 @@ elif st.session_state.prompt != "":#############################################
             """,
             unsafe_allow_html=True,
         )
-    for rank, (index, distance) in enumerate(st.session_state.sorted_indices[:5]):
-        entry = dataset[index]  # Access the dataset row using the index
+    for rank, entry in enumerate(st.session_state.nearests):
+        # entry = dataset[index]  # Access the dataset row using the index
         with st.container():
             # Display the message with RTL alignment
             st.markdown(
                 f"""
                 <div class="rtl-text">
                     <strong>رتبه {rank + 1}:</strong> {entry['Persian Messages']} <br>
-                    <em>فاصله:</em> {distance:.4f}
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -242,12 +283,11 @@ elif st.session_state.prompt != "":#############################################
             col1, col2 = st.columns([1, 1])
             with col1:
                 key_name = f"like_{rank}"
-                print('\n',st.session_state[key_name])
                 # Allow users to select messages by clicking Like
-                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry],disabled= key_name in st.session_state.liked)
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry,rank],disabled= key_name in st.session_state.liked)
 
             with col2:
                 key_name = f"dislike_{rank}"
                 # Allow users to unselect messages by clicking Dislike
-                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry],disabled= key_name in st.session_state.disliked)         
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry,rank],disabled= key_name in st.session_state.disliked)         
     st.button("انتخاب کردم",key="done!")    

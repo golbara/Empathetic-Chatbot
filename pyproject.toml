@@ -8,6 +8,8 @@ dependencies = [
     "openai>=1.55.0",
     "streamlit>=1.40.1",
     "watchdog>=6.0.0",
+    "scipy>=1.14.1",
+    "datasets>=3.1.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
