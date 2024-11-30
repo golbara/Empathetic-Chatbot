@@ -30,8 +30,9 @@ def save_to_dataset(query, selected_messages, sorted_indices, filename="saved_da
     # Create a dictionary of data to save
     data = {
         "prompt": query,
-        "selected_messages": json.dumps(selected_messages),  # Serialize the list to a JSON string
-        "sorted_indices": json.dumps(sorted_indices)  # Serialize the list to a JSON string
+        "liked": json.dumps(selected_messages),  # Serialize the list to a JSON string
+        "disliked": json.dumps([dataset[indx]["Persian Messages"] for indx in st.session_state.disliked ]),  # Serialize the list to a JSON string
+        "MRR": st.session_state.mrr # Serialize the list to a JSON string
     }
     
     # Convert to DataFrame
