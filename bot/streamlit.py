@@ -23,27 +23,47 @@ def load_dataset():
 
 dataset = load_dataset()
 
+def precision():
+    return st.session_state.cliked/st.session_state.nreturned
 
-def save_to_dataset(query, selected_messages, sorted_indices, filename="saved_data.csv"):
+
+
+def save_to_dataset(query, selected_messages, sorted_indices, filename="feedback_dataset.json"):
     # Get the current directory and file path
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_directory, filename) 
-#    file_path = os.path.join("/home/udoms", filename) 
+#    file_path = os.path.join(current_directory, filename) 
+    file_path = os.path.join("/home/udoms/Empathetic_Chatbot/bot/data", filename) 
+    disliked_list = []
+    liked_list = []
+    if(len(st.session_state.liked) != 0):
+        liked_list = [(st.session_state.nearests[i]["Persian Messages"],st.session_state.nearests[i]["embedding"]) for i in range(st.session_state.nreturned) if f"like_{i}"  in st.session_state.liked]
+    if(len(st.session_state.disliked) == 0):
+        disliked_list = [(st.session_state.nearests[i]["Persian Messages"],st.session_state.nearests[i]["embedding"]) for i in range(st.session_state.nreturned) if f"like_{i}" not in st.session_state.liked]
+    else:
+        disliked_list = [(st.session_state.nearests[int(key.split('_')[1])]["Persian Messages"],st.session_state.nearests[int(key.split('_')[1])]["embedding"]) for key in st.session_state.disliked]
+
     # Create a dictionary of data to save
     data = {
         "prompt": query,
-        "selected_messages": json.dumps(selected_messages),  # Serialize the list to a JSON string
-        "sorted_indices": json.dumps(sorted_indices)  # Serialize the list to a JSON string
+        "liked": liked_list,  # Keep as list; JSON handles serialization
+        "disliked": disliked_list,
+        "MRR": st.session_state.mrr, 
+        "precision": precision()
     }
-    
-    # Convert to DataFrame
-    df = pd.DataFrame([data])  # Wrap `data` in a list to create a single-row DataFrame
     
     # Check if the file exists and save appropriately
     if not os.path.exists(file_path):
-        df.to_csv(file_path, index=False)
+        # If the file doesn't exist, create a new JSON file and write the data
+        with open(file_path, "w", encoding="utf-8") as file:
+            json.dump([data], file, ensure_ascii=False, indent=4)  # Create a list with the first entry
     else:
-        df.to_csv(file_path, mode='a', header=False, index=False)
+        # If the file exists, append the new data
+        with open(file_path, "r+", encoding="utf-8") as file:
+            existing_data = json.load(file)  # Load the existing JSON data
+            existing_data.append(data)  # Append the new entry
+            file.seek(0)  # Reset file pointer to the beginning
+            json.dump(existing_data, file, ensure_ascii=False, indent=4)  # Write updated data
+
 
 
 
@@ -87,8 +107,6 @@ if "disliked" not in st.session_state:
 if "mrr" not in st.session_state:
     st.session_state.mrr = 0
 
-def precision():
-    return st.session_state.liked/st.session_state.nreturned
 
 
 def click_button(key_name, entry,rank):
