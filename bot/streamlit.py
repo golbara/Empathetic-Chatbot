@@ -31,13 +31,14 @@ def precision():
 def save_to_dataset(query, selected_messages, sorted_indices, filename="feedback_dataset.json"):
     # Get the current directory and file path
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_directory, filename) 
+    print(current_directory)
+    file_path = os.path.join(current_directory, 'data',filename) 
     disliked_list = []
     liked_list = []
     if(len(st.session_state.liked) != 0):
-        liked_list = [(st.session_state.nearests[i]["Persian Messages"],st.session_state.nearests[i]["embedding"]) for i in range(st.session_state.nreturned) if f"like_{i}"  in st.session_state.liked]
+        liked_list = [st.session_state.nearests[i]["Persian Messages"] for i in range(st.session_state.nreturned) if f"like_{i}"  in st.session_state.liked]
     if(len(st.session_state.disliked) == 0):
-        disliked_list = [(st.session_state.nearests[i]["Persian Messages"],st.session_state.nearests[i]["embedding"]) for i in range(st.session_state.nreturned) if f"like_{i}" not in st.session_state.liked]
+        disliked_list = [st.session_state.nearests[i]["Persian Messages"] for i in range(st.session_state.nreturned) if f"like_{i}" not in st.session_state.liked]
     else:
         disliked_list = [(st.session_state.nearests[int(key.split('_')[1])]["Persian Messages"],st.session_state.nearests[int(key.split('_')[1])]["embedding"]) for key in st.session_state.disliked]
     # Create a dictionary of data to save
