@@ -9,6 +9,8 @@ wheels/
 # venv
 .venv
 
+.log
+
 # Ignore everything in the directory
 bot/data/*
 
