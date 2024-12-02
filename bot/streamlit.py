@@ -6,8 +6,34 @@ import os
 import json  # For serializing lists to a string
 from datasets import load_from_disk
 
-st.title("Welcome! 😄")
+# st.title("Welcome! 😄")
+    # CSS for RTL and Persian font
+st.markdown(
+    """
+    <style>
+    @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
+    .rtl-text {
+        text-align: right;
+        direction: rtl;
+        font-family: 'Vazir', sans-serif;
+        font-size: 1.1em;
+        margin-bottom: 15px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+with st.container():
+    # Display the message with RTL alignment
+    st.markdown(
+        f"""
+        <div class="rtl-text">
+            <h1> خوش آمدید !😄</h1> <br>
 
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Use the cached dataset
 # Load dataset
@@ -158,21 +184,21 @@ if prompt := st.chat_input("What is up?"):
     # st.session_state.sorted_indices = sorted_indices
 
     # CSS for RTL and Persian font
-    st.markdown(
-        """
-        <style>
-        @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
-        .rtl-text {
-            text-align: right;
-            direction: rtl;
-            font-family: 'Vazir', sans-serif;
-            font-size: 1.1em;
-            margin-bottom: 15px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    # st.markdown(
+    #     """
+    #     <style>
+    #     @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
+    #     .rtl-text {
+    #         text-align: right;
+    #         direction: rtl;
+    #         font-family: 'Vazir', sans-serif;
+    #         font-size: 1.1em;
+    #         margin-bottom: 15px;
+    #     }
+    #     </style>
+    #     """,
+    #     unsafe_allow_html=True,
+    # )
     with st.container():
         # Display the message with RTL alignment
         st.markdown(
@@ -257,28 +283,28 @@ elif st.session_state.prompt!="" and st.session_state["done!"]: ################
 
 elif st.session_state.prompt != "":##############################################################################################    selecting    ################################################################
     # show items
-    st.markdown(
-            """
-            <style>
-            @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
-            .rtl-text {
-                text-align: right;
-                direction: rtl;
-                font-family: 'Vazir', sans-serif;
-                font-size: 1.1em;
-                margin-bottom: 15px;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+    # st.markdown(
+    #         """
+    #         <style>
+    #         @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font/dist/font-face.css');
+    #         .rtl-text {
+    #             text-align: right;
+    #             direction: rtl;
+    #             font-family: 'Vazir', sans-serif;
+    #             font-size: 1.1em;
+    #             margin-bottom: 15px;
+    #         }
+    #         </style>
+    #         """,
+    #         unsafe_allow_html=True,
+    #     )
    # Display the top 5 sorted Persian messages
     with st.container():
         # Display the message with RTL alignment
         st.markdown(
             f"""
             <div class="rtl-text">
-                <strong> از بین موارد زیر،متن‌های مرتبط را لایک کنید.</strong> <br>
+                <strong> از بین موارد زیر،متن‌(های) مرتبط را لایک کنید.</strong> <br>
             </div>
             """,
             unsafe_allow_html=True,
