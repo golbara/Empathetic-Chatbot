@@ -6,7 +6,7 @@ import os
 import json  # For serializing lists to a string
 from datasets import load_from_disk
 
-# st.title("Welcome! 😄")
+
 # CSS for RTL and Persian font
 st.markdown(
     """
@@ -37,7 +37,7 @@ with st.container():
 
 # Use the cached dataset
 # Load dataset
-@st.cache_data
+@st.cache_resource
 def load_dataset():
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -46,6 +46,10 @@ def load_dataset():
     # Load the dataset from the saved location
     return load_from_disk(data_path)
 
+
+@st.cache_resource
+def client():
+    return OpenAI(api_key=st.secrets.OPENAI_API_KEY)
 
 dataset = load_dataset()
 
@@ -93,9 +97,7 @@ def save_to_dataset(query, selected_messages, sorted_indices, filename="feedback
 
 
 
-client = OpenAI(
-    api_key="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")
-
+client = client()
 if "nreturned" not in st.session_state:
     st.session_state.nreturned = 10
 
