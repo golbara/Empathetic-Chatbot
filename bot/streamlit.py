@@ -6,7 +6,9 @@ import os
 import json  # For serializing lists to a string
 from datasets import load_from_disk
 
-# st.title("Welcome! 😄")
+import numpy as np
+from scipy.spatial.distance import cdist
+
 # CSS for RTL and Persian font
 st.markdown(
     """
@@ -37,17 +39,24 @@ with st.container():
 
 # Use the cached dataset
 # Load dataset
-@st.cache_data
+@st.cache_resource
 def load_dataset():
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
     # Path to the Streamlit script in the current directory
     data_path = os.path.join(current_directory, "data")
     # Load the dataset from the saved location
-    return load_from_disk(data_path)
+    dataset = load_from_disk(data_path)
+    dataset_embeddings = np.array(dataset["embedding"])
+    dataset_messages = np.array(dataset["Persian Messages"])
+    return dataset_embeddings,dataset_messages
 
 
-dataset = load_dataset()
+@st.cache_resource
+def client():
+    return OpenAI(api_key=st.secrets.OPENAI_API_KEY)
+
+dataset_embeddings,dataset_messages = load_dataset()
 
 def precision():
     return st.session_state.cliked/st.session_state.nreturned
@@ -62,11 +71,11 @@ def save_to_dataset(query, selected_messages, sorted_indices, filename="feedback
     disliked_list = []
     liked_list = []
     if(len(st.session_state.liked) != 0):
-        liked_list = [st.session_state.nearests[i]["Persian Messages"] for i in range(st.session_state.nreturned) if f"like_{i}"  in st.session_state.liked]
+        liked_list = [st.session_state.nearests[i] for i in range(st.session_state.nreturned) if f"like_{i}"  in st.session_state.liked]
     if(len(st.session_state.disliked) == 0):
-        disliked_list = [st.session_state.nearests[i]["Persian Messages"] for i in range(st.session_state.nreturned) if f"like_{i}" not in st.session_state.liked]
+        disliked_list = [st.session_state.nearests[i] for i in range(st.session_state.nreturned) if f"like_{i}" not in st.session_state.liked]
     else:
-        disliked_list = [(st.session_state.nearests[int(key.split('_')[1])]["Persian Messages"]) for key in st.session_state.disliked]
+        disliked_list = [(st.session_state.nearests[int(key.split('_')[1])]) for key in st.session_state.disliked]
 
     # Create a dictionary of data to save
     data = {
@@ -93,9 +102,7 @@ def save_to_dataset(query, selected_messages, sorted_indices, filename="feedback
 
 
 
-client = OpenAI(
-    api_key="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")
-
+client = client()
 if "nreturned" not in st.session_state:
     st.session_state.nreturned = 10
 
@@ -135,25 +142,25 @@ if "mrr" not in st.session_state:
 
 
 
-def click_button(key_name, entry,rank):
+def click_button(key_name, persian_message,rank):
     st.session_state.key_name = True
     st.session_state.cliked += 1
     if f"dislike_{rank}" in st.session_state.disliked:
         st.session_state.disliked.remove(f"dislike_{rank}")  # Remove from disliked
         st.session_state.cdisliked -= 1
     st.session_state.liked.add(key_name)
-    st.session_state.selected_messages.append(entry["Persian Messages"])
+    st.session_state.selected_messages.append(persian_message)
     st.session_state.mrr += 1/(rank+1)
     print("**************************  ",st.session_state.mrr)
 
-def click_disButton(key_name, entry,rank):
+def click_disButton(key_name, persian_message,rank):
     st.session_state.key_name = True
     st.session_state.cdisliked += 1
     if f"like_{rank}" in st.session_state.liked:
         # Remove from liked
         st.session_state.liked.remove(f"like_{rank}")
         st.session_state.cliked -= 1
-        st.session_state.selected_messages.remove(entry["Persian Messages"])
+        st.session_state.selected_messages.remove(persian_message)
         # add to disliked
     st.session_state.disliked.add(key_name)
 
@@ -172,17 +179,20 @@ if prompt := st.chat_input("چه خبر؟"):
     # Get embedding of the prompt
     query_embedding = client.embeddings.create(input=prompt, model=st.session_state.embedding_model).data[0].embedding
 
-    # Find similarity distances
-    # Compute cosine distances and store them in a separate list
-    distances = [cosine(query_embedding, embedding) for embedding in dataset["embedding"]]
+    # # Find similarity distances
+    # # Compute cosine distances and store them in a separate list
+    # distances = [cosine(query_embedding, embedding) for embedding in dataset["embedding"]]
 
-    # Pair each distance with its corresponding dataset row index
-    distance_with_indices = list(enumerate(distances))
+    # # Pair each distance with its corresponding dataset row index
+    # distance_with_indices = list(enumerate(distances))
 
-    # Sort the dataset indices based on cosine distances
-    sorted_indices = sorted(distance_with_indices, key=lambda x: x[1])
-    # st.session_state.sorted_indices = sorted_indices
-
+    # # Sort the dataset indices based on cosine distances
+    # sorted_indices = sorted(distance_with_indices, key=lambda x: x[1])
+    # # st.session_state.sorted_indices = sorted_indices
+    
+    query_embedding = np.array(query_embedding).reshape(1, -1)
+    distances = cdist(query_embedding, dataset_embeddings, metric='cosine').flatten()
+    sorted_indices = np.argsort(distances)
     with st.container():
         # Display the message with RTL alignment
         st.markdown(
@@ -194,18 +204,21 @@ if prompt := st.chat_input("چه خبر؟"):
             unsafe_allow_html=True,
         )
     # Display the top 5 sorted Persian messages
-    for rank, (index, distance) in enumerate(sorted_indices[:st.session_state.nreturned]):
+    # for rank, (index, distance) in enumerate(sorted_indices[:st.session_state.nreturned]):
+    for rank, index in enumerate(sorted_indices[:st.session_state.nreturned]):
+        index = int(index)
+        distance = distances[index]  
         # st.session_state.rank = rank
         print(f"rank: {rank}      index: {index}")
-        entry = dataset[index]  # Access the dataset row using the index
-        st.session_state.nearests.append(entry)
+        persian_message = dataset_messages[index]  # Access the dataset row using the index
+        st.session_state.nearests.append(persian_message)
         with st.container():
             # Display the message with RTL alignment
             st.markdown(
                 f"""
                 <div class="rtl-text">
-                    <strong>رتبه {rank + 1}:</strong> {entry['Persian Messages']} <br>
-                    <em>فاصله:</em> {distance:.4f}
+                    <strong>رتبه {rank + 1}:</strong> {persian_message} <br>
+                    # <em>فاصله:</em> {distance:.4f}
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -215,11 +228,11 @@ if prompt := st.chat_input("چه خبر؟"):
             col1, col2 = st.columns([1, 1])
             with col1:
                 key_name = f"like_{rank}"
-                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry,rank])
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,persian_message,rank])
 
             with col2:
                 key_name = f"dislike_{rank}"
-                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry,rank])
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,persian_message,rank])
 
     st.button("انتخاب کردم",key="done!")    
 elif st.session_state.prompt!="" and st.session_state["done!"]: #################################################################### selecting is done ################################################################
@@ -277,14 +290,14 @@ elif st.session_state.prompt != "":#############################################
             """,
             unsafe_allow_html=True,
         )
-    for rank, entry in enumerate(st.session_state.nearests):
+    for rank, persian_message in enumerate(st.session_state.nearests):
         # entry = dataset[index]  # Access the dataset row using the index
         with st.container():
             # Display the message with RTL alignment
             st.markdown(
                 f"""
                 <div class="rtl-text">
-                    <strong>رتبه {rank + 1}:</strong> {entry['Persian Messages']} <br>
+                    <strong>رتبه {rank + 1}:</strong> {persian_message} <br>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -295,10 +308,10 @@ elif st.session_state.prompt != "":#############################################
             with col1:
                 key_name = f"like_{rank}"
                 # Allow users to select messages by clicking Like
-                st.button("👍", key=key_name,on_click=click_button,args=[key_name,entry,rank],disabled= key_name in st.session_state.liked)
+                st.button("👍", key=key_name,on_click=click_button,args=[key_name,persian_message,rank],disabled= key_name in st.session_state.liked)
 
             with col2:
                 key_name = f"dislike_{rank}"
                 # Allow users to unselect messages by clicking Dislike
-                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,entry,rank],disabled= key_name in st.session_state.disliked)         
+                st.button("👎", key=key_name,on_click=click_disButton,args=[key_name,persian_message,rank],disabled= key_name in st.session_state.disliked)         
     st.button("انتخاب کردم",key="done!")    
