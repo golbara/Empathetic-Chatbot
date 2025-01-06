@@ -8,6 +8,7 @@ from datasets import load_from_disk
 
 import numpy as np
 from scipy.spatial.distance import cdist
+# import faiss
 
 # CSS for RTL and Persian font
 st.markdown(
@@ -177,19 +178,7 @@ if prompt := st.chat_input("چه خبر؟"):
         st.markdown(prompt)
 
     # Get embedding of the prompt
-    query_embedding = client.embeddings.create(input=prompt, model=st.session_state.embedding_model).data[0].embedding
-
-    # # Find similarity distances
-    # # Compute cosine distances and store them in a separate list
-    # distances = [cosine(query_embedding, embedding) for embedding in dataset["embedding"]]
-
-    # # Pair each distance with its corresponding dataset row index
-    # distance_with_indices = list(enumerate(distances))
-
-    # # Sort the dataset indices based on cosine distances
-    # sorted_indices = sorted(distance_with_indices, key=lambda x: x[1])
-    # # st.session_state.sorted_indices = sorted_indices
-    
+    query_embedding = client.embeddings.create(input=prompt, model=st.session_state.embedding_model).data[0].embedding   
     query_embedding = np.array(query_embedding).reshape(1, -1)
     distances = cdist(query_embedding, dataset_embeddings, metric='cosine').flatten()
     sorted_indices = np.argsort(distances)
@@ -203,7 +192,7 @@ if prompt := st.chat_input("چه خبر؟"):
             """,
             unsafe_allow_html=True,
         )
-    # Display the top 5 sorted Persian messages
+    # Display the top nreturned sorted Persian messages
     # for rank, (index, distance) in enumerate(sorted_indices[:st.session_state.nreturned]):
     for rank, index in enumerate(sorted_indices[:st.session_state.nreturned]):
         index = int(index)
